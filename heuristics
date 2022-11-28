@@ -1,0 +1,226 @@
+#include <bits/stdc++.h>
+
+using namespace std;
+using ll = long long;
+using P = pair<ll, ll>;
+const ll MOD = 1e9 + 7;
+const ll INF = (1ll << 60);
+
+template <typename T>
+bool chmax(T &a, const T &b)
+{
+    if (a < b)
+    {
+        a = b;
+        return true;
+    }
+    return false;
+}
+
+template <typename T>
+bool chmin(T &a, const T &b)
+{
+    if (a > b)
+    {
+        a = b;
+        return true;
+    }
+    return false;
+}
+
+ll n, m;
+
+void visualizer(vector<vector<char>> gene)
+{
+    for (int i = 0; i < n; i++)
+    {
+        for (int j = 0; j < n; j++)
+        {
+            cout << gene[i][j];
+        }
+
+        cout << endl;
+    }
+}
+
+vector<vector<char>> greedy(vector<pair<int, pair<string, vector<ll>>>> s)
+{
+    vector<vector<char>> gene(n, vector<char>(n, '.'));
+    vector<bool> used(m, false);
+    vector<vector<ll>> alpha_tate(n, vector<ll>(8, 0)), alpha_yoko(n, vector<ll>(8, 0));
+
+    for (int i = 0; i < m; i++)
+    {
+        bool d, best_flag = false; // trueが横,falseが縦
+        int X, Y;
+        int I;
+        ll best_score = -1;
+
+        for (int j = 0; j < m; j++)
+        {
+            auto p = s[j];
+
+            if (best_score > p.first)
+            {
+                break;
+            }
+
+            if (used[j])
+            {
+                continue;
+            }
+
+            for (int x = 0; x < n; x++)
+            {
+                ll able_score = 0;
+
+                for (int k = 0; k < 8; k++)
+                {
+                    able_score += min(alpha_yoko[x][k], p.second.second[k]);
+                }
+
+                if (able_score <= best_score)
+                {
+                    break;
+                }
+
+                for (int y = 0; y < n; y++)
+                {
+                    ll score = 0;
+                    bool flag = true;
+
+                    for (int k = 0; k < p.first; k++)
+                    {
+                        if (gene[x][(y + k) % n] != p.second.first[k] && gene[x][(y + k) % n] != '.')
+                        {
+                            flag = false;
+                            break;
+                        }
+
+                        if (gene[x][(y + k) % n] == p.second.first[k])
+                        {
+                            score++;
+                        }
+                    }
+
+                    if (flag)
+                    {
+                        if (chmax(best_score, score))
+                        {
+                            d = true;
+                            best_flag = true;
+                            X = x, Y = y;
+                            I = j;
+                        }
+                    }
+                }
+            }
+
+            for (int y = 0; y < n; y++)
+            {
+                ll able_score = 0;
+
+                for (int k = 0; k < 8; k++)
+                {
+                    able_score += min(alpha_tate[y][k], p.second.second[k]);
+                }
+
+                if (able_score <= best_score)
+                {
+                    break;
+                }
+
+                for (int x = 0; x < n; x++)
+                {
+                    ll score = 0;
+                    bool flag = true;
+
+                    for (int k = 0; k < p.first; k++)
+                    {
+                        if (gene[x][(y + k) % n] != p.second.first[k] && gene[x][(y + k) % n] != '.')
+                        {
+                            flag = false;
+                            break;
+                        }
+
+                        if (gene[x][(y + k) % n] == p.second.first[k])
+                        {
+                            score++;
+                        }
+                    }
+
+                    if (flag)
+                    {
+                        if (chmax(best_score, score))
+                        {
+                            d = false;
+                            best_flag = true;
+                            X = x, Y = y;
+                            I = j;
+                        }
+                    }
+                }
+            }
+        }
+
+        if (!best_flag)
+        {
+            break;
+        }
+
+        if (d)
+        {
+            for (int i = 0; i < s[I].first; i++)
+            {
+                if (gene[X][(Y + i) % n] != s[I].second.first[i])
+                {
+                    alpha_yoko[X][s[I].second.first[i] - 'A']++;
+                    alpha_tate[(Y + i) % n][s[I].second.first[i] - 'A']++;
+                }
+
+                gene[X][(Y + i) % n] = s[I].second.first[i];
+            }
+        }
+        else
+        {
+            for (int i = 0; i < s[I].first; i++)
+            {
+                if (gene[(X + i) % n][Y] != s[I].second.first[i])
+                {
+                    alpha_yoko[(X + i) % n][s[I].second.first[i] - 'A']++;
+                    alpha_tate[Y][s[I].second.first[i] - 'A']++;
+                }
+
+                gene[(X + i) % n][Y] = s[I].second.first[i];
+            }
+        }
+
+        used[I] = true;
+    }
+
+    return gene;
+}
+
+int main(void)
+{
+    cin >> n >> m;
+
+    vector<pair<int, pair<string, vector<ll>>>> s(m, pair<int, pair<string, vector<ll>>>(0, pair<string, vector<ll>>(".", vector<ll>(10, 0))));
+
+    for (int i = 0; i < m; i++)
+    {
+        cin >> s[i].second.first;
+        s[i].first = s[i].second.first.size();
+
+        for (int j = 0; j < s[i].first; j++)
+        {
+            s[i].second.second[s[i].second.first[j] - 'A']++;
+        }
+    }
+
+    sort(s.begin(), s.end(), greater<pair<int, pair<string, vector<ll>>>>());
+
+    auto best_gene = greedy(s);
+
+    visualizer(best_gene);
+}
